@@ -3,12 +3,18 @@
 import sys
 import time
 import requests
+import argparse
 
-alert_threshold = float(sys.argv[1])
-notify_threshold = float(sys.argv[2])
+parser = argparse.ArgumentParser()
+parser.add_argument('alert_threshold', type=float) # In percent
+parser.add_argument('notify_threshold', type=float) # In percent
+arguments = parser.parse_args()
+
 currency_pair_name = ' ' + 'LTC/BTC'
 currency_pair_url = 'https://btc-e.com/api/2/ltc_btc/ticker'
-polling_interval = 2
+polling_interval = 10
+alert_threshold = arguments.alert_threshold
+notify_threshold = arguments.notify_threshold
 initial_price = None
 current_price = None
 last_price = None
@@ -51,16 +57,16 @@ def check_current_price():
 	global last_price	
 	r = requests.get(currency_pair_url)
 	current_price = float(r.json()['ticker']['last'])
-	if current_price > initial_price*(1+alert_threshold):
+	if current_price > initial_price*(1+(alert_threshold/100)):
 		alert('up')
 		last_price = current_price
-	elif current_price < initial_price*(1-alert_threshold):
+	elif current_price < initial_price*(1-(alert_threshold/100)):
 		alert('down')
 		last_price = current_price
-	elif current_price > last_price*(1+notify_threshold):
+	elif current_price > last_price*(1+(notify_threshold/100)):
 		notify('up')
 		last_price = current_price
-	elif current_price < last_price*(1-notify_threshold):
+	elif current_price < last_price*(1-(notify_threshold/100)):
 		notify('down')
 		last_price = current_price
 
