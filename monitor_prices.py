@@ -13,7 +13,7 @@ initial_price = None
 current_price = None
 last_price = None
 
-def alert(direction=None):
+def alert(direction):
 	if direction is 'up':
 		print u'\u2b06 ' + str(current_price) + currency_pair_name +  ' - alert'
 	elif direction is 'down':
@@ -27,8 +27,10 @@ def notify(direction):
 		percent_change = round(((current_price-initial_price)/initial_price)*100, 2)
 		if percent_change > 0:
 			percent_change = ' +' + str(percent_change) + '%'
-		else:
+		elif percent_change < 0:
 			percent_change = ' ' + str(percent_change) + '%'
+		else:
+			percent_change = ''
 	if direction is 'up':
 		print u'\u2b06 ' + str(current_price) + currency_pair_name + percent_change
 	elif direction is 'down':
