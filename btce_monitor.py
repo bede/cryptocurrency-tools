@@ -5,16 +5,16 @@ import time
 import requests
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument('alert_threshold', type=float) # In percent
-parser.add_argument('notify_threshold', type=float) # In percent
+parser = argparse.ArgumentParser(description="Monitor the exchange rate of a BTCe currency pair")
+parser.add_argument('notify_threshold', type=float, default=1, nargs='?') # In percent
+parser.add_argument('alert_threshold', type=float, default=2, nargs='?') # In percent
 arguments = parser.parse_args()
 
 currency_pair_name = ' ' + 'LTC/BTC'
 currency_pair_url = 'https://btc-e.com/api/2/ltc_btc/ticker'
 polling_interval = 10
-alert_threshold = arguments.alert_threshold
 notify_threshold = arguments.notify_threshold
+alert_threshold = arguments.alert_threshold
 initial_price = None
 current_price = None
 last_price = None
@@ -24,7 +24,7 @@ def alert(direction):
 		print u'\u2b06 ' + str(current_price) + currency_pair_name +  ' - alert'
 	elif direction is 'down':
 		print u'\u2b07 ' + str(current_price) + currency_pair_name + ' - alert'
-	for i in range(0,5):
+	for i in range(0,5): # Play OS X alert sound
 		sys.stdout.write('\a')
 		sys.stdout.flush()
 
@@ -42,6 +42,8 @@ def notify(direction):
 	elif direction is 'down':
 		print u'\u2b07 ' + str(current_price) + currency_pair_name + percent_change
 	elif direction is 'none':
+		print 'Notification threshold: ' + str(notify_threshold) + '%'
+		print 'Audible alert threshold: ' + str(alert_threshold) + '%'
 		print 'Starting at ' + str(initial_price) + currency_pair_name
 
 def fetch_initial_price():
@@ -51,6 +53,7 @@ def fetch_initial_price():
 	initial_price = float(r.json()['ticker']['last'])
 	last_price = initial_price
 	notify('none')
+
 
 def check_current_price():
 	global current_price
