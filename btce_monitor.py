@@ -11,7 +11,7 @@ parser.add_argument('-n', '--notify_threshold', type=float, default='0.1', help=
 parser.add_argument('-a', '--alert_threshold', type=float, default='2', help='Percentage change that also triggers an audible notification')
 arguments = parser.parse_args()
 
-polling_interval = 10 # Too low and your IP will be banned
+polling_interval = 30 # Too low and your IP will be banned
 currency_pair_name = arguments.currency_pair.upper()
 currency_pair_url = 'https://btc-e.com/api/2/' + arguments.currency_pair.replace('/', '_') + '/ticker'
 notify_threshold = arguments.notify_threshold
