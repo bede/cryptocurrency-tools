@@ -2,69 +2,62 @@
 
 import sys
 import time
-import requests
 import argparse
-import logging
-
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-log = logging.getLogger("BTCEMonitor")
+import requests
 
 
-class ExchangeRate(object):
+class ExchangeRateAPI(object):
     currency_pair_url = 'https://btc-e.com/api/2/%s/ticker'
-        
+    
     def __init__(self, currency_pair_name):
-        self.currency_pair_name = currency_pair_name.replace('/', '_')   
-
-        
-    def getCurrentPrice(self):        
+        self.currency_pair_name = currency_pair_name.replace('/', '_')
+    
+    def current_rate(self):        
         r = requests.get(self.currency_pair_url % self.currency_pair_name)
         return float(r.json()['ticker']['last'])
 
 
-
-class BTCEMonitor(object):    
-    polling_interval = 30 # Too low and your IP will be banned
-    initial_price = None
+class ExchangeRateMonitor(object):    
+    polling_interval = 10
+    initial_rate = None
 
     def __init__(self, currency_pair_name, notify_threshold, alert_threshold):        
         self.currency_pair_name = currency_pair_name
         self.notify_threshold = notify_threshold
         self.alert_threshold = alert_threshold
-        
-    
-    def run(self):
+
+        print 'Notification threshold: ' + str(self.notify_threshold) + '%'
+        print 'Audible alert threshold: ' + str(self.alert_threshold) + '%'
+
+    def loop(self):
         while True:
             self.check_rate()
             time.sleep(self.polling_interval)
-            
-    
+
     def check_rate(self):
-        exchRate = ExchangeRate(self.currency_pair_name)
-        self.current_price = exchRate.getCurrentPrice()
+        btce_api = ExchangeRateAPI(self.currency_pair_name)
+        self.current_rate = btce_api.current_rate()
         
-        if (self.initial_price is None):
-            self.initial_price = self.current_price
-            self.last_price = self.current_price
-            
-        log.debug('Current price: %f' % self.current_price)            
-            
-        if self.current_price >= self.initial_price*(1+(self.alert_threshold/100)):            
-            self.alert('up')
-            self.last_price = self.current_price
-        elif self.current_price <= self.initial_price*(1-(self.alert_threshold/100)):
-            self.alert('down')
-            self.last_price = self.current_price
-        elif self.current_price >= self.last_price*(1+(self.notify_threshold/100)):
+        if (self.initial_rate is None):
+            self.initial_rate = self.current_rate
+            self.last_rate = self.current_rate
+            print 'Reference price: ' + str(self.initial_rate) + ' ' + self.currency_pair_name
+
+        if self.current_rate >= self.initial_rate*(1+(self.alert_threshold/100)):            
+            self.notify('up', True)
+            self.last_rate = self.current_rate
+        elif self.current_rate <= self.initial_rate*(1-(self.alert_threshold/100)):
+            self.notify('down', True)
+            self.last_rate = self.current_rate
+        elif self.current_rate >= self.last_rate*(1+(self.notify_threshold/100)):
             self.notify('up')
-            self.last_price = self.current_price
-        elif self.current_price <= self.last_price*(1-(self.notify_threshold/100)):
+            self.last_rate = self.current_rate
+        elif self.current_rate <= self.last_rate*(1-(self.notify_threshold/100)):
             self.notify('down')
-            self.last_price = self.current_price
-            
-            
-    def get_percent_change(self):
-        percent_change = round(((self.current_price-self.initial_price)/self.initial_price)*100, 2)
+            self.last_rate = self.current_rate
+             
+    def percent_change(self):
+        percent_change = round(((self.current_rate-self.initial_rate)/self.initial_rate)*100, 2)
         if percent_change > 0:
             percent_change = '+' + str(percent_change) + '%'
         elif percent_change < 0:
@@ -72,38 +65,31 @@ class BTCEMonitor(object):
         else:
             percent_change = ''
         return percent_change            
-            
-            
-    def alert(self, direction): # Like notify(), but also plays a sound (tested on OS X)
-        if direction is 'up':
-            arrow_char = u'\u2b06'
-        elif direction is 'down':
-            arrow_char = u'\u2b07'
-        print (arrow_char + ' ' + str(self.current_price) + ' ' + self.currency_pair_name.upper() + ' '
-            + self.get_percent_change() + ' *alert triggered*') 
-        for i in range(0,5):
-            sys.stdout.write('\a')
-            sys.stdout.flush()
-            time.sleep(0.2)
-            
     
-    def notify(self, direction):
+    def notify(self, direction, audible=False):
         if direction is 'up':
             arrow_char = u'\u2b06'
         elif direction is 'down':
             arrow_char = u'\u2b07'
-        print (arrow_char + ' ' + str(self.current_price) + ' ' + self.currency_pair_name + ' '
-            + self.get_percent_change(self.initial_price, self.current_price))
+        print (arrow_char + ' ' + str(self.current_rate) + ' ' + self.currency_pair_name + ' '
+            + self.percent_change())
+        if audible is True:
+            for i in range(0,5):
+                sys.stdout.write('\a')
+                sys.stdout.flush()
+                time.sleep(0.2)
 
 
 if __name__ == '__main__':    
-    parser = argparse.ArgumentParser(description="Monitor the exchange rate of a BTCe currency pair with visual and audible alerts at customisable thresholds")
-    parser.add_argument('-c', '--currency_pair', default='ltc/btc', help='Any BTCe traded currency pair, defaults to \'btc/ltc\'')
+    parser = argparse.ArgumentParser(description="Monitor the exchange rate of a BTCe currency pair with visual and audible alerts at chosen thresholds")
+    parser.add_argument('-c', '--currency_pair', default='ltc/btc', help='Any BTCe traded currency pair, defaults to \'ltc/btc\'')
     parser.add_argument('-n', '--notify_threshold', type=float, default='0.1', help='Percentage change that triggers a console notification')
     parser.add_argument('-a', '--alert_threshold', type=float, default='2', help='Percentage change that also triggers an audible notification')
     arguments = parser.parse_args()
     
-    monitor = BTCEMonitor(arguments.currency_pair, arguments.notify_threshold, arguments.alert_threshold)
-    monitor.run()
-    
+    if len(sys.argv) is 1:
+        print 'No arguments were supplied. Try running \'btce_monitor.py --help\''
+
+    btce_monitor = ExchangeRateMonitor(arguments.currency_pair, arguments.notify_threshold, arguments.alert_threshold)
+    btce_monitor.loop()
     
