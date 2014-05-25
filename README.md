@@ -15,5 +15,7 @@ This script uses the Python requests module. To install this, you need PIP, the 
 Next install the requests module:  
 `sudo pip install requests`  
 
-That should be it. Run `python btce_monitor.py` or `python btce_monitor.py --help` to get started  
+That should be it. Run `python btce_monitor.py` or `python btce_monitor.py --help` to get started
 
+**Updates**  
+2013-12-29: Rewrote as OOP, as an exercise
