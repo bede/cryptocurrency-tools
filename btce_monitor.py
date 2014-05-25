@@ -67,13 +67,13 @@ class ExchangeRateMonitor(object):
         return percent_change            
     
     def notify(self, direction, audible=False):
-        if direction is 'up':
+        if direction == 'up':
             arrow_char = u'\u2b06'
-        elif direction is 'down':
+        elif direction == 'down':
             arrow_char = u'\u2b07'
         print (arrow_char + ' ' + str(self.current_rate) + ' ' + self.currency_pair_name + ' '
             + self.percent_change())
-        if audible is True:
+        if audible:
             for i in range(0,5):
                 sys.stdout.write('\a')
                 sys.stdout.flush()
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--alert_threshold', type=float, default='2', help='Percentage change that also triggers an audible notification')
     arguments = parser.parse_args()
     
-    if len(sys.argv) is 1:
+    if len(sys.argv) == 1:
         print 'No arguments were supplied. Try running \'btce_monitor.py --help\''
 
     btce_monitor = ExchangeRateMonitor(arguments.currency_pair, arguments.notify_threshold, arguments.alert_threshold)
